@@ -69,7 +69,7 @@
           max(16px, env(safe-area-inset-right))
           max(16px, env(safe-area-inset-bottom))
           max(16px, env(safe-area-inset-left));
-        overflow: hidden;
+        overflow: hidden; /* keep background fixed; scroll happens inside views */
       }
 
       body::before {
@@ -144,6 +144,10 @@
         transition:
           opacity var(--fade) ease,
           transform var(--fade) ease;
+
+        overflow: auto; /* ✅ allow scrolling inside the fixed view */
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
       }
       .view.on {
         display: block;
@@ -217,6 +221,11 @@
         outline: 3px solid rgba(74, 98, 196, 0.35);
         outline-offset: 2px;
       }
+      button[disabled] {
+        opacity: 0.55;
+        cursor: not-allowed;
+        transform: none;
+      }
       .ghost {
         background: transparent;
         box-shadow: none;
@@ -227,6 +236,7 @@
         grid-template-columns: 1fr;
         gap: 12px;
         margin-top: 18px;
+        padding-bottom: 8px; /* breathing room before bottom safe area */
       }
 
       .door {
@@ -308,9 +318,17 @@
         background: rgba(43, 36, 31, 0.22);
       }
 
+      .door.locked {
+        cursor: default;
+        opacity: 0.7;
+      }
+      .door.locked:active {
+        transform: none;
+      }
+
       .progress {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         justify-content: space-between;
         gap: 12px;
         margin-top: 14px;
@@ -338,6 +356,7 @@
         text-transform: uppercase;
         color: rgba(43, 36, 31, 0.6);
         white-space: nowrap;
+        padding-top: 2px;
       }
 
       /* Room */
@@ -365,6 +384,7 @@
         gap: 14px;
         flex: 1;
         min-height: 0;
+        padding-bottom: 10px;
       }
 
       .storyCard,
@@ -474,6 +494,7 @@
         display: grid;
         grid-template-columns: 1fr;
         gap: 12px;
+        padding-bottom: 10px;
       }
       .polaroid {
         padding: 12px;
@@ -584,7 +605,7 @@
         background: rgba(0, 0, 0, 0.04);
       }
 
-      /* COVER-OPEN transition overlay */
+      /* Cover-open transition overlay */
       .coverOpenOverlay {
         position: absolute;
         inset: 0;
@@ -720,9 +741,15 @@
                 <h2 class="title" style="margin-top: 6px">
                   The places we kept returning to
                 </h2>
-                <p class="subtitle">Open any three.</p>
+                <p class="subtitle">
+                  Open any three. (You can reset if you want a different set.)
+                </p>
               </div>
-              <div><!-- intentionally empty (no back) --></div>
+              <div class="btnRow" style="margin-top: 0">
+                <button type="button" class="ghost" id="resetBtn">
+                  Reset choices
+                </button>
+              </div>
             </div>
 
             <div class="progress" aria-label="Progress and passphrase">
@@ -735,7 +762,7 @@
 
             <div class="grid" id="doorGrid" aria-label="Door list"></div>
 
-            <div class="btnRow" style="margin-top: 14px">
+            <div class="btnRow" style="margin-top: 14px; padding-bottom: 10px">
               <button
                 type="button"
                 id="openBookBtn"
@@ -770,7 +797,6 @@
 
                 <section class="artifactCard" aria-label="Artifact">
                   <div class="artifactLabel" id="artifactLabel">Artifact</div>
-
                   <div
                     class="artifactFrame"
                     id="artifactFrame"
@@ -778,7 +804,6 @@
                     tabindex="0"
                     aria-label="Open artifact"
                   ></div>
-
                   <div class="artifactTextHint" id="artifactHint"></div>
 
                   <div class="chipRow" id="audioRow" style="display: none">
@@ -810,7 +835,7 @@
                   A few prints taped to the page. Tap one to linger.
                 </p>
               </div>
-              <div><!-- intentionally empty (no after unlock option) --></div>
+              <div><!-- intentionally empty --></div>
             </div>
 
             <div
@@ -865,21 +890,22 @@
       (function () {
         let currentAudio = null;
 
+        // Update these paths to match your repo.
         const doors = [
           {
             id: "liberty-park",
             label: "Liberty State Park",
             story:
-              "At Liberty State Park, it felt like my world grew exponentially—but we didn’t need to fill it with words.",
+              "At Liberty State Park, the world got wide—and we didn’t need to fill it with words.",
             margin: "With you, even silence feels like company.",
             clause: "I felt my shoulders drop, because you were beside me.",
             artifact: {
               type: "photo",
-              src: "assets/media/20260404_165900.jpg",
+              src: "./assets/media/20260103_133435(1).jpg",
               alt: "Liberty State Park",
             },
             audio: {
-              src: "assets/media/PTT-20260412-WA0051.mp3",
+              src: "./assets/media/PTT-20260412-WA0051.mp3",
               label: "Listen",
             },
           },
@@ -887,26 +913,25 @@
             id: "gelato",
             label: "Sweet Pea's Ice Cream Store",
             story:
-              "At the Sweet Pea's Ice Cream store, we kept enjoying the little things, almost as if we were in our own home.",
+              "At the gelato store, we kept choosing small joys like they were worth returning for.",
             margin: "I love how you make small things feel like a treat.",
-            clause: "I fell in love with our little ice cream traditions.",
+            clause: "I fell in love with our little traditions.",
             artifact: {
               type: "photo",
-              src: "assets/media/Screenshot_20260428_224245_WhatsApp.jpg",
-              alt: "Gelato",
+              src: "./assets/media/20260328_202136 (2).jpg",
+              alt: "Ice cream",
             },
           },
           {
             id: "bowling",
             label: "Bowling Alley",
             story:
-              "At the bowling alley, the noise drowned into the background, and only you were visible to me eyes.",
-            margin:
-              "You make me feel warm and loved, despite the chaos around.",
-            clause: "I kept watching your eyes and wanting more of it.",
+              "At the bowling alley, the noise blurred into the background, and you stayed clear.",
+            margin: "You make me feel warm, even under bright lights.",
+            clause: "I kept catching your laugh and wanting more of it.",
             artifact: {
               type: "photo",
-              src: "assets/media/20260328_202136 (2).jpg",
+              src: "./assets/media/20260404_165900.jpg",
               alt: "Bowling alley",
             },
           },
@@ -914,12 +939,12 @@
             id: "aquarium",
             label: "Aquarium",
             story:
-              "At the aquarium, everything moved slowly and naturally, and I liked the pace we kept together.",
-            margin: "Standing next to you feels like most natural thing to do.",
+              "At the aquarium, everything moved slowly, and I liked the pace we kept together.",
+            margin: "Standing next to you feels like the safest kind of quiet.",
             clause: "I loved how calm we could be together, even in a crowd.",
             artifact: {
               type: "photo",
-              src: "assets/media/20260103_133435(1).jpg",
+              src: "./assets/media/20260425_153052.jpg",
               alt: "Aquarium",
             },
           },
@@ -934,7 +959,7 @@
               "I could picture a lifetime in something as simple as sharing a table.",
             artifact: {
               type: "text",
-              src: "assets/media/20260425_153052.jpg",
+              src: "./assets/media/Screenshot_20260428_224245_WhatsApp.jpg",
               alt: "Text screenshot",
             },
           },
@@ -942,7 +967,6 @@
 
         const REQUIRED = 3;
         const state = { opened: new Set(), clauses: [] };
-        let activeDoorId = null;
         let unlocked = false;
 
         const el = {
@@ -952,6 +976,7 @@
           bookView: document.getElementById("bookView"),
 
           beginBtn: document.getElementById("beginBtn"),
+          resetBtn: document.getElementById("resetBtn"),
           doorGrid: document.getElementById("doorGrid"),
           passphraseClauses: document.getElementById("passphraseClauses"),
           progressCount: document.getElementById("progressCount"),
@@ -985,6 +1010,7 @@
           for (const v of views) v.classList.remove("show", "on");
           which.classList.add("on");
           requestAnimationFrame(() => which.classList.add("show"));
+          which.scrollTop = 0;
         }
 
         function stopAudio() {
@@ -1002,9 +1028,21 @@
           return d;
         }
 
-        function refreshDoorMarks() {
+        function isSelectionFull() {
+          return state.opened.size >= REQUIRED;
+        }
+
+        function refreshDoorMarksAndLocks() {
+          const full = isSelectionFull();
           el.doorGrid.querySelectorAll(".door").forEach((node) => {
-            node.classList.toggle("opened", state.opened.has(node.dataset.id));
+            const id = node.dataset.id;
+            const opened = state.opened.has(id);
+            node.classList.toggle("opened", opened);
+
+            // Disable unopened doors once 3 are chosen, but allow scroll.
+            const locked = full && !opened;
+            node.classList.toggle("locked", locked);
+            node.setAttribute("aria-disabled", String(locked));
           });
         }
 
@@ -1025,39 +1063,15 @@
           const canOpen = clauses.length >= REQUIRED;
           el.openBookBtn.disabled = !canOpen;
           el.openBookBtn.setAttribute("aria-disabled", String(!canOpen));
+
+          // Show reset only after at least 1 selection.
+          el.resetBtn.style.visibility =
+            state.opened.size > 0 ? "visible" : "hidden";
         }
 
         function renderArtifact(artifact, label) {
           el.artifactFrame.innerHTML = "";
           el.artifactLabel.textContent = label;
-
-          if (artifact.type === "video") {
-            const vid = document.createElement("video");
-            vid.className = "artifactMedia";
-            vid.src = artifact.src;
-            vid.setAttribute("playsinline", "true");
-            vid.setAttribute("muted", "true");
-            vid.setAttribute("loop", "true");
-            vid.setAttribute("preload", "metadata");
-            vid.setAttribute("aria-label", artifact.alt || "Video");
-            vid.addEventListener("canplay", () => {
-              try {
-                vid.play().catch(() => {});
-              } catch (_) {}
-            });
-            el.artifactFrame.appendChild(vid);
-
-            el.artifactHint.textContent = "Tap to view larger.";
-            el.artifactFrame.onclick = () =>
-              openLightboxVideo(artifact.src, label);
-            el.artifactFrame.onkeydown = (e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                openLightboxVideo(artifact.src, label);
-              }
-            };
-            return;
-          }
 
           const img = document.createElement("img");
           img.className = "artifactMedia";
@@ -1086,17 +1100,21 @@
           if (!state.opened.has(id)) {
             state.opened.add(id);
             if (state.clauses.length < REQUIRED) state.clauses.push(d.clause);
-            refreshDoorMarks();
-            updatePassphrase();
           }
+          refreshDoorMarksAndLocks();
+          updatePassphrase();
         }
 
         function openDoor(id) {
-          if (unlocked) return; // no after-unlock navigation
-          stopAudio();
+          if (unlocked) return;
 
+          // If already full, only allow opening doors that are already selected.
+          if (isSelectionFull() && !state.opened.has(id)) {
+            return;
+          }
+
+          stopAudio();
           const d = getDoor(id);
-          activeDoorId = id;
 
           el.roomTitle.textContent = d.label;
           el.roomStory.textContent = d.story;
@@ -1107,7 +1125,6 @@
             d.artifact.type === "text" ? "Text" : "Photo / Film",
           );
 
-          // Audio: only Liberty State Park
           if (d.audio && d.audio.src) {
             el.audioRow.style.display = "flex";
             el.audioChip.textContent = d.audio.label || "Listen";
@@ -1123,7 +1140,7 @@
             el.audioRow.style.display = "none";
           }
 
-          // Auto-count on open (your rule)
+          // Auto-count on open.
           markDoorOpened(id);
 
           setView(el.roomView);
@@ -1165,22 +1182,6 @@
           el.lightbox.classList.add("on");
         }
 
-        function openLightboxVideo(src, title) {
-          stopAudio();
-          el.lightboxTitle.textContent = title;
-          el.lightboxMediaWrap.innerHTML = "";
-          const vid = document.createElement("video");
-          vid.src = src;
-          vid.controls = true;
-          vid.playsInline = true;
-          vid.preload = "metadata";
-          el.lightboxMediaWrap.appendChild(vid);
-          el.lightbox.classList.add("on");
-          try {
-            vid.play().catch(() => {});
-          } catch (_) {}
-        }
-
         function closeLightbox() {
           el.lightbox.classList.remove("on");
           el.lightboxMediaWrap.innerHTML = "";
@@ -1213,13 +1214,12 @@
 
             el.doorGrid.appendChild(node);
           });
-          refreshDoorMarks();
+
+          refreshDoorMarksAndLocks();
         }
 
         function buildPolaroids() {
-          // No after-unlock navigation: keep it concise and self-contained.
           const items = doors.map((d) => ({
-            id: d.id,
             label: d.label,
             tag: "kept",
             media: d.artifact,
@@ -1227,22 +1227,6 @@
             backMargin: d.margin,
             audio: d.audio || null,
           }));
-
-          // Replace with a symbolic extra photo if you want; optional.
-          items.push({
-            id: "extra",
-            label: "Month One",
-            tag: "today",
-            media: {
-              type: "photo",
-              src: "assets/media/extra.webp",
-              alt: "A symbolic photo for month one",
-            },
-            backCaption:
-              "A month later, the smallest moments still feel like the ones I want.",
-            backMargin: "Thank you for letting this be ours.",
-            audio: null,
-          });
 
           el.polaroidGrid.innerHTML = "";
           items.forEach((it) => {
@@ -1254,28 +1238,12 @@
             const top = document.createElement("div");
             top.className = "polaroidTop";
 
-            if (it.media.type === "video") {
-              const v = document.createElement("video");
-              v.className = "polaroidMedia";
-              v.src = it.media.src;
-              v.muted = true;
-              v.loop = true;
-              v.playsInline = true;
-              v.preload = "metadata";
-              v.addEventListener("canplay", () => {
-                try {
-                  v.play().catch(() => {});
-                } catch (_) {}
-              });
-              top.appendChild(v);
-            } else {
-              const img = document.createElement("img");
-              img.className = "polaroidMedia";
-              img.src = it.media.src;
-              img.alt = it.media.alt || it.label;
-              img.loading = "lazy";
-              top.appendChild(img);
-            }
+            const img = document.createElement("img");
+            img.className = "polaroidMedia";
+            img.src = it.media.src;
+            img.alt = it.media.alt || it.label;
+            img.loading = "lazy";
+            top.appendChild(img);
 
             const cap = document.createElement("div");
             cap.className = "polaroidCap";
@@ -1284,12 +1252,11 @@
             card.appendChild(top);
             card.appendChild(cap);
 
-            const openBack = () => openPolaroidBack(it);
-            card.addEventListener("click", openBack);
+            card.addEventListener("click", () => openPolaroidBack(it));
             card.addEventListener("keydown", (e) => {
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
-                openBack();
+                openPolaroidBack(it);
               }
             });
 
@@ -1360,30 +1327,43 @@
           stopAudio();
           closeLightbox();
 
-          // Freeze interaction immediately
           el.openBookBtn.disabled = true;
           el.openBookBtn.setAttribute("aria-disabled", "true");
 
-          // Show overlay and animate "cover" opening
           el.coverOpenOverlay.classList.add("on");
           requestAnimationFrame(() => el.coverPanel.classList.add("open"));
 
-          // After animation, switch to book view and remove overlay
           await new Promise((r) => setTimeout(r, 800));
           buildPolaroids();
           setView(el.bookView);
 
-          // Hide overlay after view swap
           await new Promise((r) => setTimeout(r, 50));
           el.coverOpenOverlay.classList.remove("on");
           el.coverPanel.classList.remove("open");
         }
 
+        function resetChoices() {
+          if (unlocked) return;
+          stopAudio();
+          closeLightbox();
+
+          state.opened.clear();
+          state.clauses.length = 0;
+
+          refreshDoorMarksAndLocks();
+          updatePassphrase();
+
+          // Return to top so it feels like a fresh start.
+          el.hallView.scrollTop = 0;
+        }
+
         function init() {
           buildDoorList();
           updatePassphrase();
+          el.resetBtn.style.visibility = "hidden";
 
           el.beginBtn.addEventListener("click", () => setView(el.hallView));
+          el.resetBtn.addEventListener("click", resetChoices);
 
           el.roomBackBtn.addEventListener("click", () => {
             if (unlocked) return;
